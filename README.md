@@ -1,6 +1,6 @@
-# @lepion/mcp-server-multiagent
+# @kayaozkur/mcp-server-multiagent
 
-[![npm version](https://img.shields.io/npm/v/@lepion/mcp-server-multiagent.svg)](https://www.npmjs.com/package/@lepion/mcp-server-multiagent)
+[![npm version](https://img.shields.io/npm/v/@kayaozkur/mcp-server-multiagent.svg)](https://www.npmjs.com/package/@kayaozkur/mcp-server-multiagent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
@@ -37,10 +37,10 @@ The Multi-Agent MCP Server provides access to 99+ functionalities from a compreh
 
 ```bash
 # Install from npm
-npm install -g @lepion/mcp-server-multiagent
+npm install -g @kayaozkur/mcp-server-multiagent
 
 # Or clone the repository for development
-git clone https://github.com/lepion/mcp-server-multiagent.git
+git clone https://github.com/kayaozkur/mcp-server-multiagent.git
 cd mcp-server-multiagent
 
 # Install dependencies
@@ -311,7 +311,7 @@ Deploy agent teams for complex problem-solving:
 
 ```bash
 # Clone the repository
-git clone https://github.com/lepion/mcp-server-multiagent.git
+git clone https://github.com/kayaozkur/mcp-server-multiagent.git
 cd mcp-server-multiagent
 
 # Install dependencies
@@ -392,7 +392,7 @@ npm start
 
 ### Getting Help
 
-- Check the [documentation](https://github.com/lepion/mcp-server-multiagent/docs)
+- Check the [documentation](https://github.com/kayaozkur/mcp-server-multiagent/docs)
 - Browse examples in the `/examples` directory
 - Search functionalities using the built-in tools
 - Open an issue on GitHub for bugs or feature requests
