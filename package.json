@@ -1,6 +1,6 @@
 {
   "name": "@lepion/mcp-server-multiagent",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Model Context Protocol server for intelligent multi-agent communication system management",
   "type": "module",
   "main": "dist/index.js",
@@ -13,7 +13,13 @@
     "format": "prettier --write src/**/*.ts",
     "parse-agents": "node scripts/parse-multiagent-system.cjs"
   },
-  "keywords": ["mcp", "multi-agent", "communication", "screen", "coordination"],
+  "keywords": [
+    "mcp",
+    "multi-agent",
+    "communication",
+    "screen",
+    "coordination"
+  ],
   "author": "Lepion",
   "license": "MIT",
   "dependencies": {
