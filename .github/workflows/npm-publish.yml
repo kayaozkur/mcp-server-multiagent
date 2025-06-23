@@ -1,0 +1,197 @@
+name: NPM Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Perform a dry run (no actual publish)'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  test:
+    name: Test Before Publish
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests
+      run: npm test
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Check package.json
+      run: |
+        echo "Package name: $(node -p "require('./package.json').name")"
+        echo "Package version: $(node -p "require('./package.json').version")"
+
+  publish:
+    name: Publish to NPM
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        registry-url: 'https://registry.npmjs.org'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build package
+      run: npm run build
+    
+    - name: Check npm authentication
+      run: npm whoami
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    
+    - name: Dry run publish (if requested)
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true'
+      run: npm publish --dry-run
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    
+    - name: Publish to npm
+      if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run != 'true')
+      run: npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    
+    - name: Create GitHub deployment
+      if: github.event_name == 'release'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const package = require('./package.json');
+          await github.rest.repos.createDeployment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: context.sha,
+            task: 'deploy',
+            auto_merge: false,
+            required_contexts: [],
+            payload: {
+              version: package.version,
+              package: package.name,
+              registry: 'npm'
+            },
+            environment: 'npm',
+            description: `Deploy ${package.name}@${package.version} to npm`
+          });
+
+  publish-github:
+    name: Publish to GitHub Packages
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        registry-url: 'https://npm.pkg.github.com'
+        cache: 'npm'
+    
+    - name: Configure package for GitHub
+      run: |
+        # Update package.json to use GitHub scope if needed
+        REPO_NAME="${{ github.repository }}"
+        PACKAGE_NAME=$(node -p "require('./package.json').name")
+        
+        # Check if package name already has a scope
+        if [[ $PACKAGE_NAME != @*/* ]]; then
+          # Add GitHub org as scope
+          ORG_NAME="${{ github.repository_owner }}"
+          jq --arg org "@$ORG_NAME" --arg name "$PACKAGE_NAME" '.name = $org + "/" + $name' package.json > package.tmp.json
+          mv package.tmp.json package.json
+        fi
+        
+        echo "Updated package name: $(node -p "require('./package.json').name")"
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build package
+      run: npm run build
+    
+    - name: Publish to GitHub Packages
+      if: github.event_name == 'release'
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-release-notes:
+    name: Create Release Notes
+    needs: [publish, publish-github]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Generate release notes
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const package = require('./package.json');
+          const { data: release } = await github.rest.repos.getReleaseByTag({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag: context.ref.replace('refs/tags/', '')
+          });
+          
+          const additionalNotes = `
+          
+          ## 📦 Package Information
+          - **Package**: ${package.name}
+          - **Version**: ${package.version}
+          - **npm**: https://www.npmjs.com/package/${package.name}
+          - **GitHub Packages**: https://github.com/${{ github.repository }}/packages
+          
+          ## 🚀 Installation
+          
+          ### From npm:
+          \`\`\`bash
+          npm install ${package.name}@${package.version}
+          \`\`\`
+          
+          ### From GitHub Packages:
+          \`\`\`bash
+          npm install @${{ github.repository_owner }}/${package.name}@${package.version}
+          \`\`\`
+          `;
+          
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: release.id,
+            body: release.body + additionalNotes
+          });
