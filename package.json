@@ -1,7 +1,7 @@
 {
   "name": "@lepion/mcp-server-multiagent",
   "version": "1.0.0",
-  "description": "MCP server for multi-agent communication system management",
+  "description": "Model Context Protocol server for intelligent multi-agent communication system management",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
